@@ -54,8 +54,8 @@
 
 ; this only checks straight wikilinks, aliases etc. are not checked!
 ; we could replace this with checking at a certain position if we want to have the page-names at a certain position
-(defn append-if-not-included [path to-be-appended]
-  (when (not (includes? (slurp path) to-be-appended))
+(defn append-if-not-included [path to-be-appended to-check]
+  (when (not (includes? (slurp path) to-check))
     (append-to-file path to-be-appended)))
 
 (defn vec-contains? [vec str]
@@ -66,7 +66,7 @@
    [path full-paths]
     (when
      (vec-contains? relevant-page-names (path->page-name path))
-      (append-if-not-included path (page-name->appendable page-name)))))
+      (append-if-not-included path (page-name->appendable page-name) (str->wikilink page-name)))))
 
 ; could be massively sped up by converting the data structure from {to-be-added-page-name: [compound-pages...]}
 ; to {compound-page: [to-be-added-page-names...]}, so we need to create the appendables just once and do just one read/write to the file
@@ -89,7 +89,7 @@
       (let [page-name (path->page-name path)
             page-content (slurp path)
             relevant-page-names (get page-name m)
-            filtered-rel-page-names (filter #(not (includes? page-content %)) relevant-page-names)
+            filtered-rel-page-names (filter #(not (includes? page-content (str->wikilink %))) relevant-page-names)
             appendables (map page-name->appendable filtered-rel-page-names)]
         (when (not-empty appendables)
           (append-to-file (join "" appendables) path))))))
