@@ -1,6 +1,6 @@
 (ns functions-for-processing-notes-shared.core
   (:require [babashka.fs :as fs]
-            [clojure.string :as str :refer [includes?]])
+            [clojure.string :as str :refer [includes? join]])
   (:gen-class))
 
 (defn md-files [path]
@@ -78,6 +78,30 @@
       (println (str "Now appending " page-name))
       (append-page-name-to-relevant-files full-paths (vec relevant-page-names) page-name))))
 
+; could be simplified, but running out of time
+; difference from the other one is that we go throug the paths
+; and can immediately add all the appendables because the data-structure is more suited for this case
+(defn append-compound-pages-to-pages [path]
+  (let [full-paths (md-files path)
+        m (paths->search-result-map full-paths)]
+    (doseq
+     [path full-paths]
+      (let [page-name (path->page-name path)
+            page-content (slurp path)
+            relevant-page-names (get page-name m)
+            filtered-rel-page-names (filter #(not (includes? page-content %)) relevant-page-names)
+            appendables (map page-name->appendable filtered-rel-page-names)]
+        (when (not-empty appendables)
+          (append-to-file (join "" appendables) path))))))
+
 (defn -main [& args]
-  (println (str "Processing path " (first args)))
-  (append-page-names-to-compound-pages (first args)))
+  (let [path (first args)
+        append-page-names (nil? (second args))]
+    (println (str "Processing path " path))
+    (if append-page-names
+      (do
+        (println "Appending page-names to compound pages")
+        (append-page-names-to-compound-pages path))
+      (do
+        (println "Appending compound page-names to pages")
+        (append-compound-pages-to-pages path)))))
