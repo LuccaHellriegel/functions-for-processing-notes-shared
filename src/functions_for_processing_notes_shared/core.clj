@@ -88,11 +88,12 @@
      [path full-paths]
       (let [page-name (path->page-name path)
             page-content (slurp path)
-            relevant-page-names (get page-name m)
+            relevant-page-names (get m page-name)
             filtered-rel-page-names (filter #(not (includes? page-content (str->wikilink %))) relevant-page-names)
             appendables (map page-name->appendable filtered-rel-page-names)]
+        (println (str "Now appending to " page-name))
         (when (not-empty appendables)
-          (append-to-file (join "" appendables) path))))))
+          (append-to-file path (join "" appendables)))))))
 
 (defn -main [& args]
   (let [path (first args)
